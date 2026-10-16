@@ -643,7 +643,14 @@ class Server:
             return pack_response(ResponseCode.GENERAL_ERROR)
 
 
-if __name__ == "__main__":
-    # נקודת הכניסה הראשית להפעלת השרת
+def main():
+    """
+    הפונקציה הראשית של תוכנית השרת (נדרשת לפי הנחיות ההגשה במטלה).
+    מאתחלת מופע של מחלקת `Server` ומפעילה את לולאת ההאזנה הראשית.
+    """
     server_instance = Server()
     server_instance.start()
+
+
+if __name__ == "__main__":
+    main()
