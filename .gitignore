@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Visual Studio / C++
+.vs/
+Debug/
+Release/
+x64/
+*.aps
+*.idb
+*.ncb
+*.obj
+*.pch
+*.pdb
+*.ilk
+*.exe
+*.sdf
+*.suo
+*.user
+
+# Runtime generated files
+received_files/
+me.info
+priv.key
