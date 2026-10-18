@@ -1,20 +1,11 @@
 /**
- * @file Protocol.cpp
- * @brief מימוש פונקציות העזר של הפרוטוקול הבינארי עבור צד הלקוח (C++20).
- *
- * קובץ זה מממש את הפונקציות המוצהרות ב-`Protocol.h`:
- * - יצירת כותרת בקשה (`createRequestHeader`) בפורמט Little-Endian.
- * - אריזת וחילוץ שמות משתמשים ושמות קבצים בשדות קבועים של 255 בתים (`packFixedName`, `extractFixedName`).
- * - המרה דו-כיוונית של מזהה הלקוח הייחודי (16 בתים) בין ייצוג בינארי לייצוג הקסדצימלי (`clientIdToHex`, `hexToClientId`).
- *
- * מי קורא למודול זה:
- * - מודול הקונפיגורציה (`Config.cpp`) להמרת המזהה הייחודי בקובץ `me.info`.
- * - מודול ניהול התקשורת והלקוח בעת בניית בקשות לשרת ופענוח תשובותיו.
+ * קובץ: Protocol.cpp
+ * מימוש פונקציות העזר של הפרוטוקול: בניית כותרת בקשה, טיפול בשדות מחרוזת בגודל קבוע (255 בתים),
+ * והמרת ה-Client ID (16 בתים) בין ייצוג בינארי לייצוג הקסדצימלי עבור הקובץ me.info.
  */
 
 #include "Protocol.h"
 
-#include <algorithm>
 #include <cstring>
 #include <iomanip>
 #include <sstream>
@@ -22,9 +13,7 @@
 
 namespace Protocol {
 
-    /**
-     * @brief יצירת כותרת בקשה (`RequestHeader`) בת 23 בתים מוכנה לשליחה.
-     */
+    // מימוש בניית כותרת בקשה בת 23 בתים מהלקוח לשרת (לפי טבלת Request Header בעמוד 6 במטלה)
     RequestHeader createRequestHeader(const ClientIdArray& clientId, RequestCode code, uint32_t payloadSize) {
         RequestHeader header{};
         std::memcpy(header.clientId, clientId.data(), CLIENT_ID_SIZE);
@@ -34,21 +23,16 @@ namespace Protocol {
         return header;
     }
 
-    /**
-     * @brief העתקת מחרוזת ASCII לשדה קבוע בן 255 בתים, כולל ריפוד באפסים ותו null מסיים.
-     */
+    // מימוש דרישת הפרוטוקול לשדות Name ו-File Name בגודל 255 בתים כולל תו מסיים null (עמודים 6-7 במטלה)
     void packFixedName(const std::string& text, char (&destBuffer)[NAME_FIELD_SIZE]) {
         if (text.size() >= NAME_FIELD_SIZE) {
-            throw std::invalid_argument("Name exceeds maximum allowed length of 254 characters (must include null terminator).");
+            throw std::invalid_argument("Name exceeds maximum allowed length of 254 characters.");
         }
-        // איפוס מלא של הבאפר (255 בתים של '\0') והעתקת תווי המחרוזת
         std::memset(destBuffer, 0, NAME_FIELD_SIZE);
         std::memcpy(destBuffer, text.data(), text.size());
     }
 
-    /**
-     * @brief חילוץ בטוח של מחרוזת מתוך שדה קבוע בגודל 255 בתים (עד תו ה-null הראשון).
-     */
+    // חילוץ בטוח של שם מתוך שדה קבוע של 255 בתים (עוצר בתו ה-null הראשון)
     std::string extractFixedName(const char (&srcBuffer)[NAME_FIELD_SIZE]) {
         const char* nullPos = static_cast<const char*>(std::memchr(srcBuffer, '\0', NAME_FIELD_SIZE));
         if (nullPos == nullptr) {
@@ -57,9 +41,7 @@ namespace Protocol {
         return std::string(srcBuffer, static_cast<size_t>(nullPos - srcBuffer));
     }
 
-    /**
-     * @brief המרת מערך 16 בתים של Client ID למחרוזת הקסדצימלית בת 32 תווי ASCII.
-     */
+    // מימוש המרת ה-UUID (16 בתים) למחרוזת ASCII שבה כל שני תווים מייצגים ערך hex בעל 8 סיביות (לפי עמוד 4 במטלה)
     std::string clientIdToHex(const ClientIdArray& clientId) {
         std::ostringstream oss;
         oss << std::hex << std::nouppercase << std::setfill('0');
@@ -69,12 +51,10 @@ namespace Protocol {
         return oss.str();
     }
 
-    /**
-     * @brief המרת מחרוזת הקסדצימלית בת 32 תווי ASCII למערך בינארי של 16 בתים (`ClientIdArray`).
-     */
+    // מימוש קריאת ה-UUID מתוך שורה 2 של הקובץ me.info (32 תווי hex -> 16 בתים בינאריים, לפי עמוד 4 במטלה)
     ClientIdArray hexToClientId(const std::string& hexStr) {
         if (hexStr.size() != CLIENT_ID_SIZE * 2) {
-            throw std::invalid_argument("Invalid hex Client ID length: expected 32 hex characters (16 bytes).");
+            throw std::invalid_argument("Invalid hex Client ID length in me.info (expected 32 hex chars).");
         }
 
         ClientIdArray clientId{};
@@ -83,7 +63,7 @@ namespace Protocol {
             size_t processed = 0;
             unsigned long val = std::stoul(byteStr, &processed, 16);
             if (processed != 2 || val > 0xFF) {
-                throw std::invalid_argument("Invalid hex character encountered in Client ID.");
+                throw std::invalid_argument("Invalid hex character in Client ID.");
             }
             clientId[i] = static_cast<uint8_t>(val);
         }
@@ -91,4 +71,3 @@ namespace Protocol {
     }
 
 } // namespace Protocol
-
