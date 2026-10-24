@@ -1,13 +1,12 @@
 /**
  * קובץ: ClientManager.cpp
- * מימוש סדר הפעולות של הלקוח (Batch Mode) בהתאם לעמודים 3-10 בחוברת המטלה:
+ * מימוש סדר הפעולות של הלקוח Batch Mode 
  * 1. קריאת הקובץ transfer.json והתחברות לשרת.
- * 2. רישום לקוח חדש (825 -> 1600, יצירת RSA ושמירה ל-me.info ו-priv.key, שליחת מפתח ציבורי 826 -> 1602)
- *    או התחברות חוזרת במידה ו-me.info כבר קיים (827 -> 1605, או רישום מחדש אם התקבל 1606).
- * 3. הצפנת כל קובץ ברשימה באמצעות מפתח ה-AES ושליחתו בבקשה 828 (בחבילות).
- * 4. השוואת ה-CRC המקומי ל-CRC מהשרת (תשובה 1603) ושליחת 900 (תקין), 901 (ניסיון חוזר עד 3 פעמים) או 902 (ביטול בפעם ה-4).
+ * 2. רישום לקוח חדש 825 -> 1600, יצירת RSA ושמירה ל me.info priv.key, שליחת מפתח ציבורי 826 -> 1602
+ *    או התחברות חוזרת במידה ו-me.info כבר קיים 827 -> 1605, או רישום מחדש אם התקבל 1606
+ * 3. הצפנת כל קובץ ברשימה באמצעות מפתח הAES ושליחתו בבקשה 828 
+ * 4. השוואת ה-CRC המקומי ל-CRC מהשרת תשובה 1603 ושליחת 900  901 ניסיון חוזר עד 3 פעמים או 902 ביטול בפעם ה-4
  */
-
 #include "ClientManager.h"
 #include "Cksum.h"
 
@@ -22,7 +21,7 @@ namespace ClientApp {
     ClientManager::ClientManager()
         : m_clientId{} {}
 
-    // מימוש סדר הפעולות הקבוע של הלקוח (Batch Mode - עמוד 4 סעיף ב')
+    // מימוש סדר הפעולות הקבוע של הלקוח 
     void ClientManager::start() {
         m_transferConfig = Config::loadTransferConfig();
         m_clientName = m_transferConfig.clientName;
@@ -44,7 +43,7 @@ namespace ClientApp {
         std::cout << "[Client] Finished transferring all files. Disconnected." << std::endl;
     }
 
-    // מימוש הבחירה בין רישום להתחברות חוזרת לפי קיום הקובץ me.info (עמוד 5 סעיפים 1-3 ועמוד 10)
+    // מימוש הבחירה בין רישום להתחברות חוזרת לפי קיום הקובץ me.info
     void ClientManager::authenticateAndExchangeKeys() {
         if (!Config::meInfoExists()) {
             std::cout << "[Client] 'me.info' does not exist. Registering as a new client..." << std::endl;
@@ -52,8 +51,8 @@ namespace ClientApp {
         } else {
             std::cout << "[Client] 'me.info' found. Sending reconnect request (827)..." << std::endl;
             if (!tryReconnectFlow()) {
-                // מימוש דרישת קוד 1606 בעמוד 8 ותהליך ההתאוששות בעמוד 10:
-                // אם בקשת ההתחברות החוזרת נדחתה, על הלקוח להירשם מחדש כמו לקוח חדש.
+                // מימוש דרישת קוד 1606 :
+                // אם בקשת ההתחברות החוזרת נדחתה על הלקוח להירשם מחדש כמו לקוח חדש.
                 std::cout << "[Client] Reconnect rejected (1606). Registering as a new client..." << std::endl;
                 m_clientName = m_transferConfig.clientName;
                 performNewRegistrationFlow();
@@ -61,12 +60,12 @@ namespace ClientApp {
         }
     }
 
-    // מימוש תהליך הרישום והחלפת המפתחות ללקוח חדש (לפי תרשים הזרימה בעמוד 3 ועמוד 5 במטלה)
+
+        // מימוש תהליך הרישום והחלפת המפתחות ללקוח חדש 
     void ClientManager::performNewRegistrationFlow() {
         sendRegisterRequest();
-
-        // יצירת זוג מפתחות RSA (ציבורי ופרטי) ושמירת הפרטי ב-priv.key וב-me.info (עמודים 4-5)
-        m_crypto.generateRsaKeyPair();
+        // יצירת זוג מפתחות RSA ציבורי ופרטי ושמירת הפרטי ב-priv.key ובme.info  
+         m_crypto.generateRsaKeyPair();
         std::string privKeyBase64 = m_crypto.exportPrivateKeyBase64();
 
         Config::savePrivateKeyFile(privKeyBase64);
@@ -82,10 +81,11 @@ namespace ClientApp {
         sendPublicKeyRequest();
     }
 
-    // מימוש בקשה 825 (רישום) וקבלת תשובה 1600, כולל עד 3 ניסיונות חוזרים במקרה של שגיאת שרת (עמודים 5-8)
+    // מימוש בקשה 825 וקבלת תשובה 1600 כולל עד 3 ניסיונות חוזרים במקרה של שגיאת שרת 
     void ClientManager::sendRegisterRequest() {
         Protocol::NamePayload payload{};
         Protocol::packFixedName(m_clientName, payload.name);
+         
 
         Protocol::ClientIdArray emptyId{};
         Protocol::RequestHeader reqHeader = Protocol::createRequestHeader(
@@ -116,7 +116,7 @@ namespace ClientApp {
         throw std::runtime_error("Fatal: Registration (825) failed after 3 retries.");
     }
 
-    // מימוש בקשה 826 (שליחת מפתח ציבורי) וקבלת מפתח AES מוצפן בתשובה 1602 (עמודים 5-8)
+    // מימוש בקשה 826  וקבלת מפתח AES מוצפן בתשובה 1602
     void ClientManager::sendPublicKeyRequest() {
         Protocol::PublicKeyPayload payload{};
         Protocol::packFixedName(m_clientName, payload.name);
@@ -156,7 +156,8 @@ namespace ClientApp {
         throw std::runtime_error("Fatal: Public key exchange (826) failed after 3 retries.");
     }
 
-    // מימוש בקשה 827 (התחברות חוזרת) בעזרת המפתח הקודם מהקובץ priv.key (לפי עמוד 5 סעיף 3 ועמודים 7-8)
+
+    // מימוש בקשה 827 התחברות חוזרת בעזרת המפתח הקודם מהקובץ priv.key 
     bool ClientManager::tryReconnectFlow() {
         Config::MeInfo meInfo = Config::loadMeInfo();
         m_clientName = meInfo.clientName;
@@ -212,10 +213,11 @@ namespace ClientApp {
         throw std::runtime_error("Fatal: Reconnect (827) failed after 3 retries.");
     }
 
-    // מימוש העברת קובץ בודד ואימות השליחה בעזרת CRC (לפי תרשים הזרימה בעמוד 3 ועמודים 5 ו-7):
-    // אם ה-CRC תואם נשלחת הודעה 900; אם לא תואם מנסים לשלוח שוב (הודעה 901 + בקשה 828) עד 3 פעמים,
-    // ובכישלון בפעם הרביעית שולחים הודעת ביטול 902.
-    void ClientManager::processSingleFile(const std::string& filePath) {
+    // ran
+    // מימוש העברת קובץ בודד ואימות השליחה בעזרת CRC 
+    // אם ה-CRC תואם נשלחת הודעה 900  אם לא תואם מנסים לשלוח שוב הודעה 901 udo  בקשה 828 עד 3 פעמים
+// ובכישלון בפעם הרביעית שולחים הודעת ביטול 902
+void ClientManager::processSingleFile(const std::string& filePath) {
         std::string fileName = extractBaseFileName(filePath);
         std::vector<uint8_t> plainData = readBinaryFile(filePath);
 
@@ -248,7 +250,7 @@ namespace ClientApp {
         }
     }
 
-    // מימוש שליחת קובץ מוצפן בבקשה 828 בחבילות וקבלת תשובה 1603 עם ה-CRC מהשרת (לפי עמודים 7-8 במטלה)
+    // מימוש שליחת קובץ מוצפן בבקשה 828 בחבילות וקבלת תשובה 1603 עם ה-CRC מהשרת 
     void ClientManager::sendEncryptedFileAndGetCrc(
         const std::string& fileName,
         uint32_t origFileSize,
@@ -318,7 +320,7 @@ namespace ClientApp {
         throw std::runtime_error("Fatal: Sending file (828) failed after 3 server error retries.");
     }
 
-    // מימוש שליחת הודעות 900, 901 ו-902 וקבלת תשובה 1604 (עבור 900 ו-902, לפי עמודים 7-8 במטלה)
+ // מימוש שליחת הודעות 900  901 ו 902 וקבלת תשובה 1604  עבור 900 ו 902 
     void ClientManager::sendCrcStatus(Protocol::RequestCode code, const std::string& fileName) {
         Protocol::NamePayload payload{};
         Protocol::packFixedName(fileName, payload.name);
@@ -354,7 +356,7 @@ namespace ClientApp {
         throw std::runtime_error("Fatal: Finalizing CRC status (900/902) failed after 3 retries.");
     }
 
-    // מימוש דרישת עמוד 5 ("שגיאה מצד השרת"): הדפסת ההודעה המדויקת למסך בכל מקרה של שגיאה
+    // הדפסת ההודעה המדויקת למסך בכל מקרה של שגיאה
     void ClientManager::printServerError() {
         std::cout << "server responded with an error" << std::endl;
     }
@@ -384,4 +386,4 @@ namespace ClientApp {
         return buffer;
     }
 
-} // namespace ClientApp
+}

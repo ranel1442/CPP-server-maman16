@@ -11,8 +11,9 @@ import struct
 from dataclasses import dataclass
 from enum import IntEnum
 
-# מימוש דרישות השרת מעמודים 1-2 במטלה:
 # גרסת השרת היא 3, פורט ברירת המחדל הוא 1369 אם port.info לא קיים, וניתוק לקוח לאחר 5 דקות חוסר פעילות.
+
+
 SERVER_VERSION = 3
 DEFAULT_PORT = 1369
 PORT_INFO_FILE = "port.info"
@@ -56,9 +57,9 @@ class ResponseCode(IntEnum):
     REGISTER_FAILED = 1601                # רישום נכשל
     PUBLIC_KEY_RECEIVED_SEND_AES = 1602   # התקבל מפתח ציבורי ושולח מפתח AES מוצפן
     FILE_RECEIVED_WITH_CRC = 1603         # קובץ התקבל תקין עם CRC
-    MESSAGE_RECEIVED_THANKS = 1604        # מאשר קבלת הודעה, תודה (בתגובה ל-900 או 902)
+    MESSAGE_RECEIVED_THANKS = 1604        # מאשר קבלת הודע תודה תגובה ל900 או 902
     RECONNECT_APPROVED_SEND_AES = 1605    # מאשר בקשה להתחברות חוזרת, שולח מפתח AES מוצפן
-    RECONNECT_REJECTED = 1606             # בקשה להתחברות חוזרת נדחתה (הלקוח יירשם מחדש)
+    RECONNECT_REJECTED = 1606              # בקשה להתחברות חוזרת נדחתה הלקוח יירשם מחדש
     GENERAL_ERROR = 1607                  # שגיאה כללית בשרת
 
 
